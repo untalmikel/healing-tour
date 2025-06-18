@@ -284,7 +284,7 @@ const products = [
         name: "HOODIE",
         description: "Un abrigador hoodie para las noches frescas en La Toscana.",
         price: 100000,
-        image: "images/hoodie.png" 
+        image: "images/hoodie.pn" 
     },
     {
         id: 2,
