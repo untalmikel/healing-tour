@@ -209,10 +209,10 @@ if (videoModal && modalVideo && closeVideoButton && galleryVideos.length > 0) {
             // Limpiar source elements antiguos si los hay
             modalVideo.innerHTML = '';
             // Añadir source elements usando los atributos data-src
-            const sourceMp4 = document.createElement('source');
-            sourceMp4.src = this.getAttribute('data-video-src-mp4');
-            sourceMp4.type = 'video/mp4';
-            modalVideo.appendChild(sourceMp4);
+            const sourcewebm = document.createElement('source');
+            sourcewebm.src = this.getAttribute('data-video-src-webm');
+            sourcewebm.type = 'video/webm';
+            modalVideo.appendChild(sourcewebm);
 
             const sourceWebm = document.createElement('source');
             sourceWebm.src = this.getAttribute('data-video-src-webm');
