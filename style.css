@@ -1763,7 +1763,7 @@ section.animated.visible {
 .chatbot-button {
     position: fixed;
     bottom: 25px;
-    right: 25px;
+    left: 25px;
     background-color: var(--color-secondary); /* Usa el color de acento o secundario */
     color: #fff;
     border: none;
