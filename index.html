@@ -200,6 +200,35 @@
 <button id="backToTopBtn" class="back-to-top-btn" title="Volver arriba">
     <i class="fas fa-arrow-up"></i> <!-- Icono de Font Awesome -->
 </button>
+
+<!-- Botón de apertura del chatbot (Necesario HTML) -->
+    <button id="openChatbotBtn" class="chatbot-button" title="Abrir Chatbot">
+        <i class="fas fa-comments"></i>
+    </button>
+
+    <!-- Modal del Chatbot (Necesario HTML) -->
+    <div id="chatbotModal" class="modal">
+        <div class="modal-content-chatbot">
+            <div class="chat-header">
+                <h3>Asistente de Healing Tour</h3>
+                <span class="close-button" id="closeChatbotBtn">&times;</span>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Mensaje inicial del bot -->
+                <div class="message bot-message">¡Hola! Soy tu asistente de Healing Tour. ¿En qué puedo ayudarte hoy?</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Escribe tu mensaje..." autocomplete="off">
+                <button id="sendChatBtn" class="btn btn-small">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            <div id="chatLoading" class="chat-loading-indicator">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    </div>
+
     <!-- Script principal de JavaScript -->
     <script src="script.js"></script>
 </body>

@@ -783,3 +783,169 @@ document.addEventListener("keydown", (event) => {
     closeCart()
   }
 })
+
+// -------------------- Lógica del Chatbot Interactivo --------------------
+    const chatbotModal = document.getElementById('chatbotModal');
+    const openChatbotBtn = document.getElementById('openChatbotBtn');
+    const closeChatbotBtn = document.getElementById('closeChatbotBtn');
+    const chatMessagesDiv = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendChatBtn = document.getElementById('sendChatBtn');
+    const chatLoadingIndicator = document.getElementById('chatLoading');
+
+    // Recuperar historial de chat de sessionStorage al cargar (si no se usa Firestore todavía)
+    // chatHistory = JSON.parse(sessionStorage.getItem('healingTourChatHistory')) || [];
+
+    // Función para mostrar mensajes en la interfaz del chat
+    function addMessageToChat(message, sender) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', `${sender}-message`);
+        messageElement.textContent = message;
+        chatMessagesDiv.appendChild(messageElement);
+        chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Scroll automático al final
+    }
+
+    // Cargar historial de chat desde Firestore
+    async function loadChatHistory() {
+        if (!db || !userId) {
+            console.log("Firestore o userId no están listos para cargar el historial.");
+            // Si Firestore no está listo, cargar un mensaje inicial predeterminado
+            if (chatMessagesDiv.children.length === 0) { // Solo si no hay mensajes
+                addMessageToChat('¡Hola! Soy tu asistente de Healing Tour. ¿En qué puedo ayudarte hoy?', 'bot');
+            }
+            return;
+        }
+
+        const chatRef = collection(db, `artifacts/${__app_id}/users/${userId}/chatMessages`);
+        const q = query(chatRef, orderBy("timestamp", "asc")); // Ordenar por fecha de forma ascendente
+
+        onSnapshot(q, (snapshot) => {
+            chatMessagesDiv.innerHTML = ''; // Limpiar mensajes existentes
+            chatHistory = []; // Resetear historial local
+            if (snapshot.empty) {
+                addMessageToChat('¡Hola! Soy tu asistente de Healing Tour. ¿En qué puedo ayudarte hoy?', 'bot');
+            } else {
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    addMessageToChat(data.text, data.sender);
+                    chatHistory.push({ role: data.sender === 'user' ? 'user' : 'model', parts: [{ text: data.text }] });
+                });
+            }
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+        }, (error) => {
+            console.error("Error al cargar historial de chat:", error);
+            addMessageToChat('Error al cargar la conversación. Por favor, recarga la página.', 'bot');
+        });
+    }
+
+    // Guardar mensaje en Firestore
+    async function saveMessageToFirestore(message, sender) {
+        if (!db || !userId) {
+            console.warn("Firestore o userId no están listos. Mensaje no guardado.");
+            return;
+        }
+        try {
+            const chatCollectionRef = collection(db, `artifacts/${__app_id}/users/${userId}/chatMessages`);
+            await setDoc(doc(chatCollectionRef), { // Usa setDoc con doc() sin ID para auto-generar ID
+                text: message,
+                sender: sender,
+                timestamp: new Date() // Almacenar el timestamp para ordenar
+            });
+        } catch (error) {
+            console.error("Error al guardar mensaje en Firestore:", error);
+        }
+    }
+
+
+    // Función para enviar mensaje al chatbot
+    async function sendMessageToChatbot() {
+        const userMessage = chatInput.value.trim();
+        if (userMessage === '') return; // No enviar mensajes vacíos
+
+        addMessageToChat(userMessage, 'user'); // Mostrar mensaje del usuario
+        saveMessageToFirestore(userMessage, 'user'); // Guardar mensaje del usuario en Firestore
+        chatInput.value = ''; // Limpiar input
+        chatInput.disabled = true; // Deshabilitar input
+        sendChatBtn.disabled = true; // Deshabilitar botón de envío
+        chatLoadingIndicator.style.display = 'flex'; // Mostrar indicador de carga
+
+        // Añadir el mensaje del usuario al historial para el modelo
+        chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+
+        try {
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // La API key será proporcionada por el entorno de Canvas
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const botResponse = result.candidates[0].content.parts[0].text;
+                addMessageToChat(botResponse, 'bot'); // Mostrar respuesta del bot
+                saveMessageToFirestore(botResponse, 'bot'); // Guardar respuesta del bot en Firestore
+                chatHistory.push({ role: "model", parts: [{ text: botResponse }] }); // Añadir al historial
+            } else {
+                addMessageToChat('Disculpa, no pude obtener una respuesta en este momento. Por favor, intenta de nuevo.', 'bot');
+                console.error("Respuesta inesperada de la API de Gemini:", result);
+            }
+        } catch (error) {
+            console.error("Error al comunicarse con la API de Gemini:", error);
+            addMessageToChat('Hubo un error al conectar con el asistente. Intenta de nuevo más tarde.', 'bot');
+        } finally {
+            chatLoadingIndicator.style.display = 'none'; // Ocultar carga
+            chatInput.disabled = false; // Habilitar input
+            sendChatBtn.disabled = false; // Habilitar botón de envío
+            chatInput.focus(); // Volver a enfocar el input
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Asegura scroll al final
+            // Guardar historial de chat en sessionStorage después de cada interacción
+            // sessionStorage.setItem('healingTourChatHistory', JSON.stringify(chatHistory)); // Ya no es necesario si se usa Firestore
+        }
+    }
+
+    // Event listeners para abrir/cerrar el chatbot
+    if (openChatbotBtn && chatbotModal && closeChatbotBtn) {
+        openChatbotBtn.addEventListener('click', () => {
+            chatbotModal.classList.add('active'); // Muestra el modal
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Asegura scroll al final
+            chatInput.focus();
+        });
+
+        closeChatbotBtn.addEventListener('click', () => {
+            chatbotModal.classList.remove('active'); // Oculta el modal
+        });
+
+        // Cerrar el modal haciendo clic fuera del contenido
+        chatbotModal.addEventListener('click', (event) => {
+            if (event.target === chatbotModal) {
+                chatbotModal.classList.remove('active');
+            }
+        });
+
+        // Cerrar el modal con la tecla Escape
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && chatbotModal.classList.contains('active')) {
+                chatbotModal.classList.remove('active');
+            }
+        });
+    }
+
+    // Event listeners para enviar mensaje (botón y Enter)
+    if (sendChatBtn && chatInput) {
+        sendChatBtn.addEventListener('click', sendMessageToChatbot);
+        chatInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) { // Permite Shift+Enter para nueva línea
+                event.preventDefault(); // Prevenir salto de línea en el input
+                sendMessageToChatbot();
+            }
+        });
+    }
+    // -------------------- FIN Lógica del Chatbot Interactivo --------------------
