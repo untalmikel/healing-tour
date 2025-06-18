@@ -121,6 +121,7 @@ hr {
   color: var(--color-primary);
   border: 2px solid var(--color-primary);
   box-shadow: none;
+  margin-bottom: 20px;
 }
 
 .btn-secondary:hover {
