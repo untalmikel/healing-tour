@@ -209,15 +209,15 @@ if (videoModal && modalVideo && closeVideoButton && galleryVideos.length > 0) {
             // Limpiar source elements antiguos si los hay
             modalVideo.innerHTML = '';
             // Añadir source elements usando los atributos data-src
-            const sourcemp4 = document.createElement('source');
-            sourcemp4.src = this.getAttribute('data-video-src-mp4');
-            sourcemp4.type = 'video/mp4';
-            modalVideo.appendChild(sourcemp4);
+            const sourceMp4 = document.createElement('source');
+            sourceMp4.src = this.getAttribute('data-video-src-mp4');
+            sourceMp4.type = 'video/mp4';
+            modalVideo.appendChild(sourceMp4);
 
-            const sourcemp4 = document.createElement('source');
-            sourcemp4.src = this.getAttribute('data-video-src-mp4');
-            sourcemp4.type = 'video/mp4';
-            modalVideo.appendChild(sourcemp4);
+            const sourceWebm = document.createElement('source');
+            sourceWebm.src = this.getAttribute('data-video-src-webm');
+            sourceWebm.type = 'video/webm';
+            modalVideo.appendChild(sourceWebm);
 
             modalVideo.load(); // Cargar el video para reproducirlo
             modalVideo.play(); // Iniciar la reproducción del video
